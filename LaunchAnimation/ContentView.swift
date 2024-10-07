@@ -7,56 +7,80 @@
 
 import SwiftUI
 
-struct TextModel: Identifiable {
-    let id: UUID = .init()
-    let text: String
-    let animationType: AnimationType
-    
-    init(text: String, animationType: AnimationType = .scale) {
-        self.text = text
-        self.animationType = animationType
-    }
-}
-
 struct ContentView: View {
-    @State private var animator = SlidingAnimationManager()
-    @State var animationDataManager = AnimationDataManager()
+    @State private var textsSlidingAnimationManager = TextsSlidingAnimationManager()
+    @State private var animationDataManager = AnimationDataManager()
+    @State private var logoAnimationManager = LogoAnimationManager()
+    @State private var viewHeight: CGFloat = 0
+    @State private var geometryDidLoad: Bool = false
     
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                VStack(spacing: animator.spacing) {
+                VStack(spacing: textsSlidingAnimationManager.spacing) {
                     ForEach(animationDataManager.texts) { text in
                         GradientLabel(text)
                     }
                 }
-                .offset(y: animator.offset)
+                .offset(y: textsSlidingAnimationManager.offset)
                 .frame(maxWidth: .infinity)
+                ZStack(alignment: .center) {
+                    getImage(geometry: geometry)
+                        .offset(y: logoAnimationManager.imageOffset)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+                .onAppear {
+                    print(geometry.size)
+                }
             }
             .ignoresSafeArea()
-            .onAppear {
-                addInitialTexts()
-            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Reset") {
                         animationDataManager.reset()
-                        animator.reset()
+                        textsSlidingAnimationManager.reset()
+                        logoAnimationManager.reset(offset: viewHeight/2 + 30)
                     }
-                    .disabled(animator.isAnimating)
+                    .disabled(!animationDataManager.didComplete ||
+                              textsSlidingAnimationManager.isAnimating ||
+                              logoAnimationManager.isAnimating)
                 }
             }
         }
-        .onChange(of: animationDataManager.isReady) { oldValue, newValue in
+        .onAppear {
+            start()
+        }
+        .onChange(of: animationDataManager.didComplete) { _, newValue in
             if (newValue) {
-                animator.start()
+                textsSlidingAnimationManager.start()
+            }
+        }
+        .onChange(of: textsSlidingAnimationManager.didComplete) { _, newValue in
+            if (newValue) {
+                logoAnimationManager.start()
             }
         }
     }
     
-    private func addInitialTexts() {
-        animationDataManager.addInitialTexts()
+    private func getImage(geometry: GeometryProxy) -> some View {
+        DispatchQueue.main.async {
+            guard !geometryDidLoad, geometry.size.height > 0 else { return }
+            logoAnimationManager.imageOffset = geometry.size.height/2 + LogoAnimationManager.imageWH/2
+            viewHeight = geometry.size.height
+            geometryDidLoad = true
+        }
+        return Image(.logo)
+            .renderingMode(.template)
+            .resizable()
+            .frame(width: LogoAnimationManager.imageWH, height: LogoAnimationManager.imageWH)
+            .foregroundStyle(.red)
     }
+    
+    private func start() {
+        animationDataManager.start()
+    }
+
 }
 
 #Preview {

@@ -7,13 +7,27 @@
 
 import SwiftUI
 
+struct TextModel: Identifiable {
+    let id: UUID = .init()
+    let text: String
+    let animationType: AnimationType
+    
+    init(text: String, animationType: AnimationType = .scale) {
+        self.text = text
+        self.animationType = animationType
+    }
+}
+
 enum AnimationType {
     case scale
     case opacity
 }
 
 struct GradientLabel: View {
-    let text: TextModel
+    private static let scaleForAnimation: CGFloat = 1.5
+    private static let opacityForAnimation: CGFloat = 0
+    
+    private let text: TextModel
     
     @State private var isAnimating: Bool = false
     @State private var scale: Double
@@ -24,9 +38,9 @@ struct GradientLabel: View {
         switch text.animationType {
         case .scale:
             _opacity = State(initialValue: 1.0)
-            _scale = State(initialValue: 1.5)
+            _scale = State(initialValue: GradientLabel.scaleForAnimation)
         case .opacity:
-            _opacity = State(initialValue: 0)
+            _opacity = State(initialValue: GradientLabel.opacityForAnimation)
             _scale = State(initialValue: 1.0)
         }
     }
@@ -54,7 +68,7 @@ struct GradientLabel: View {
         .padding()
         .scaleEffect(scale)
         .opacity(opacity)
-        .animation(.easeIn(duration: 0.1), value: animationValue)
+        .animation(.easeIn(duration: Constants.baseAnimationSpeed), value: animationValue)
         .onAppear {
             switch text.animationType {
             case .scale:
