@@ -40,7 +40,7 @@ struct ContentView: View {
                     Button("Reset") {
                         animationDataManager.reset()
                         textsSlidingAnimationManager.reset()
-                        logoAnimationManager.reset(offset: viewHeight/2 + 30)
+                        logoAnimationManager.reset(offset: viewHeight/2 + LogoAnimationManager.imageWH/2)
                     }
                     .disabled(!animationDataManager.didComplete ||
                               textsSlidingAnimationManager.isAnimating ||
